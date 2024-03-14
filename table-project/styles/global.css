@@ -1,0 +1,127 @@
+  @font-face {
+    font-family: 'Custom';
+    src: url('@/font-families/8141.otf') format('otf'),
+         url('@/font-families/8143.otf') format('otf'),
+         url('@/font-families/8145.otf') format('otf'),
+         url('@/font-families/8147.otf') format('otf'),
+         url('@/font-families/8149.otf') format('otf'),
+         url('@/font-families/8159.otf') format('otf');
+    /* Дополнительные свойства шрифта */
+  }
+  
+  body {
+    font-family: 'Custom';
+    background: #fbfcfd;
+    margin: 0;
+  }
+  
+  .table {
+    display: flex;
+    gap: 5px;
+    flex-direction: column;
+  }
+  
+  .table-header{
+    display: flex;
+  }
+
+  .table-header .table-cell {
+    border: 1px solid #ccc;
+    padding: 5px;
+  }
+  
+  .table-header-item {
+    padding: 10px;
+    border: 1px solid #ccc;
+  }
+
+  .column-input, .row-input {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .row-input{
+    padding: 5px 10px;
+  }
+  
+  .table-row {
+    display: flex;
+    align-items: center;
+    position: relative;
+  }
+  
+  .table-row.selected {
+    background-color: #e0e0e0;
+  }
+  
+  .row-checkbox {
+    margin-right: 10px;
+  }
+  
+  .handle {
+    cursor: move;
+  }
+  
+  .resize {
+    cursor: ew-resize;
+  }
+  
+  .pointer {
+    cursor: pointer;
+  }
+
+  .dragging {
+    opacity: 0.5;
+  }
+  
+  .droppable {
+    border: 2px dashed #000;
+  }
+  
+  .droppable-placeholder {
+    border: 2px dashed #000;
+    width: 100%;
+  }
+  
+  .table-row:hover .ellipsis-container {
+    display: block;
+  }
+  
+  .ellipsis-block{
+    position: relative;
+    width: 20px;
+    height: 20px;
+    display: block;
+    align-items: center;
+  }
+  
+  .ellipsis-container {
+    display: none;
+    position: absolute;
+    top: 0;
+    left: 0; /* сдвигаем слева, чтобы элемент находился перед чекбоксом */
+  }
+  
+  .ellipsis-icon {
+    width: 100%;
+    height: 100%;
+    transition: opacity 0.3s ease-in-out;
+  }
+  
+  .button-style{
+    padding: 10px 15px 10px 15px;
+    border-radius: 5px;
+    border: none;
+    background-color: #2f8cff;
+    cursor: pointer;
+    font-size: 14px;
+
+    font-family: 'Custom';
+    width: fit-content;
+    font-weight: normal;
+    font-stretch: normal;
+    font-style: normal;
+    line-height: normal;
+    letter-spacing: normal;
+    color: #fff;
+  }
