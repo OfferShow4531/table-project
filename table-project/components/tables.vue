@@ -20,7 +20,7 @@
       </div>
     </div>
 
-    <div class="table">
+    <div class="table-panel">
       <div class="table-header" v-if="editMode === 'drag'">
         <div class="table-header-item">
           <input type="checkbox" @change="switchSelectedAllRows">
@@ -38,7 +38,12 @@
           @drop="dropColumn(index)"
           v-show="columnVisibility[index]"
         >
-          <div class="column-input">{{columns[index]}}</div>
+          <template v-if="column !== 'id'">
+            <input type="text" class="column-input" :value="columns[index]" @input="updateColumn($event, index)">
+          </template>
+          <template v-else>
+            <div class="column-input">{{ columns[index] }}</div>
+          </template>
         </div>
       </div>
       <div class="table-header" v-else>
@@ -51,7 +56,12 @@
           :style="columnStyles[index]" 
           @mousedown="resizeColumnStart(index, $event)"
         >
-          <input type="text" v-model="columns[index]" class="column-input">
+          <template v-if="column !== 'id'">
+            <input type="text" class="column-input" :value="columns[index]" @input="updateColumn($event, index)">
+          </template>
+          <template v-else>
+            <div class="column-input">{{ columns[index] }}</div>
+          </template>
         </div>
       </div>
 
@@ -85,14 +95,44 @@
         >
 
         <div class="ellipsis-block">
-          <div class="ellipsis-container" v-if="dragRowIndex === null || dragRowIndex === rowIndex">
+          <div class="ellipsis-container-desktop" v-if="dragRowIndex === null || dragRowIndex === rowIndex">
             <img src="@/images/ellipsis.svg" class="ellipsis-icon">
           </div>
+          <div class="ellipsis-container-mobile" @click="showDeleteMenu">
+              <p>Действие</p>
+              <img src="@/images/ellipsis.svg" class="ellipsis-icon">
+          </div>
         </div>
-        <div v-for="(column, colIndex) in columns" :key="colIndex" class="table-cell" :data-index="colIndex" :style="columnStyles[colIndex]" v-show="columnVisibility[colIndex]">
-          <input type="text" v-model="row[column]" class="row-input" :placeholder="column">
+
+        <div v-for="(column, colIndex) in columns" :key="colIndex" class="table-cell-desktop" :data-index="colIndex" :style="columnStyles[colIndex]" v-show="columnVisibility[colIndex]">
+          <template v-if="column !== 'id'">
+            <input type="text" v-model="row[column]" class="row-input" :placeholder="column">
+          </template>
+          <template v-else>
+            <div class="indexation">
+              <img src="@/images/burger-icon.svg" alt="">
+              <div>{{ row[column] }}</div>
+            </div>
+          </template>
+        </div>
+        <div v-for="(column, colIndex) in columns" :key="colIndex" class="table-cell-mobile" :data-index="colIndex">
+          <template v-if="column !== 'id'">
+            <p>{{columns[colIndex]}}</p>
+            <input type="text" v-model="row[column]" class="row-input" :placeholder="column">
+          </template>
+          <template v-else>
+            <p class="mobile-row">{{columns[colIndex]}}</p>
+            <div class="indexation">
+              <img src="@/images/burger-icon.svg" alt="">
+              <div>{{ row[column] }}</div>
+            </div>
+          </template>
+        </div>
+        <div class="delete-menu" v-show="isMobileMenu">
+          <span @click.stop="deleteRow(rowIndex)" class="delete-button">Удалить</span>
         </div>
       </div>
+      <div class="delete-modal-overlay" v-show="isMobileMenu" @click.stop="closeMobileMenu"></div>
     </div>
 
      <div class="modal-overlay" v-show="isModal" @click="closeModal"></div>
@@ -104,7 +144,7 @@
       </div>
     </div>
 
-    <div class="sub-modal-overlay" v-show="isSubModalOpen" @click="closeSubModal"></div>
+    <div class="sub-modal-overlay" v-show="isSubModalOpen" @click.stop="closeSubModal"></div>
 
     <div class="sub-modal" v-show="isSubModalOpen">
       <div class="settings" @click="closeSubModal">
@@ -116,6 +156,8 @@
         <label>{{ column }}</label>
       </div>
     </div>
+
+    <button class="button-style" @click="saveChanges">Сохранить изменения</button>
   </div>
 </template>
 
@@ -124,11 +166,12 @@ import '@/styles/global.css';
 export default {
   data() {
     return {
-      columns: ['id', 'name', 'price', 'capacity', 'product name', 'weight', 'author_name', 'description', 'time', 'time log'],
+      columns: ['id', 'Наименование единицы', 'Цена', 'Название товара', 'Итого', 'Вес', 'Автор', 'Описание', 'Время', 'Дата'],
       rows: [],
       columnVisibility: Array(10).fill(true),
       selectAllChecked: false,
       resizingColumnIndex: null,
+      isMobileMenu: false,
       startX: 0,
       startWidth: 0,
       lastId: 0,
@@ -167,15 +210,15 @@ export default {
     addRow(){
       this.rows.push({
         id: this.generateId(),
-        name: '', 
-        price: '',
-        capacity: '',
-        'product name': '',
-        weight: '',
-        author_name: '',
-        description: '',
-        time: '',
-        'time log': ''
+        'Наименование единицы': '', 
+        'Цена': '0',
+        'Название товара': '',
+        'Итого': '0',
+        'Вес': '0',
+        'Автор': '',
+        'Описание': '',
+        'Время': '',
+        'Дата': ''
       });
     },
     dragStartColumn(index) {
@@ -245,6 +288,15 @@ export default {
         row.id = index + 1;
       });
     },
+    deleteRow(rowIndex) {
+      this.rows.splice(rowIndex, 1);
+
+      this.rows.forEach((row, index) => {
+        row.id = index + 1;
+      });
+
+      this.isMobileMenu = false;
+    },
     generateId() {
       return this.rows.length + 1; 
     },
@@ -261,24 +313,12 @@ export default {
         const deltaX = event.pageX - this.startX;
         const newWidth = Math.min(window.innerWidth, this.startWidth + deltaX); 
         console.log("DeltaX:", deltaX, "StartX:", this.startX, "NewWidth:", newWidth);
-
-        
         this.columnWidths[this.resizingColumnIndex] = newWidth;
         console.log("New param of columnWidth:", this.columnWidths);
-
-        
         const columnElement = document.querySelector(`.table-header-item[data-index="${this.resizingColumnIndex}"]`);
-
-        
         columnElement.style.width = newWidth + 'px';
-
-        
-        const cellElement = document.querySelector(`.table-cell[data-index="${this.resizingColumnIndex}"]`);
-
-        
+        const cellElement = document.querySelector(`.table-cell-desktop[data-index="${this.resizingColumnIndex}"]`);
         cellElement.style.width = newWidth + 'px';
-
-        
         this.startX = event.pageX;
     },
     resizeColumnEnd() {
@@ -309,10 +349,15 @@ export default {
       this.isModal = false;
     },
     saveChanges() {
-      
       localStorage.setItem('columns', JSON.stringify(this.columns));
       localStorage.setItem('rows', JSON.stringify(this.rows));
     },
+    showDeleteMenu(){
+      this.isMobileMenu = !this.isMobileMenu;
+    },
+    closeMobileMenu(){
+      this.isMobileMenu = false;
+    }
   },
   mounted() {
     
@@ -331,17 +376,17 @@ export default {
 <style lang="scss" scoped>
 
 .table{
-  width: 1728px;
+  width: 108rem;
   height: fit-content;
-  padding: 10px 25px 10px 10px;
-  background-color: #fbfcfd;
-  border-radius: 10px;
-  box-shadow: 0 5px 20px 0 rgba(0, 0, 0, 0.07);
-  border: solid 1px var(--pale-grey);
+  padding: 0.625rem 1.5625rem 0.625rem 0.625rem;
+  background-color: #eeeff1;
+  border-radius: 0.625rem;
+  box-shadow: 0 0.3125rem 1.25rem 0 rgba(0, 0, 0, 0.07);
+  border: solid 0.0625rem var(--pale-grey);
 }
 
 .controls {
-  margin-bottom: 10px;
+  margin-bottom: 0.625rem;
   display: flex;
   flex-direction: row;
   width: 100%;
@@ -349,32 +394,32 @@ export default {
   div.right-panel{
     display: flex;
     justify-content: flex-end;
-    gap: 20px;
+    gap: 1.25rem;
     width: 50%;
 
     img{
-      width: 15px;
-      height: 15px;
+      width: 0.9375rem;
+      height: 0.9375rem;
       object-fit: contain;
     }
   }
   div.left-panel{
     display: flex;
     justify-content: flex-start;
-    gap: 20px;
+    gap: 1.25rem;
     width: 50%;
 
     button.button-style{
-      width: 149px;
-      height: 55px;
-      font-size: 14px;
+      width: 9.3125rem;
+      height: 3.4375rem;
+      font-size: 0.875rem;
     }
 
     .add-row{
-      width: 146px;
-      height: 35px;
-      padding: 10px 15px 10px 10px;
-      border-radius: 5px;
+      width: 9.125rem;
+      height: 2.1875rem;
+      padding: 0.625rem 0.9375rem 0.625rem 0.625rem;
+      border-radius: 0.3125rem;
       background-color: #2f8cff;
       cursor: pointer;
 
@@ -382,10 +427,10 @@ export default {
       flex-direction: row;
       justify-content: center;
       align-items: center;
-      gap: 7px;
+      gap: 0.4375rem;
 
       span{
-        font-size: 14px;
+        font-size: 0.875rem;
         width: fit-content;
         font-weight: normal;
         font-stretch: normal;
@@ -396,18 +441,18 @@ export default {
       }
 
       img{
-        width: 11px;
-        height: 11px;
-        margin: 2px 7px 2px 0;
-        border-radius: 100px;
+        width: 0.6875rem;
+        height: 0.6875rem;
+        margin: 0.125rem 0.4375rem 0.125rem 0;
+        border-radius: 6.25rem;
       }
     }
 
     .add-column{
-      width: 160px;
-      height: 35px;
-      padding: 10px 15px 10px 10px;
-      border-radius: 5px;
+      width: 10rem;
+      height: 2.1875rem;
+      padding: 0.625rem 0.9375rem 0.625rem 0.625rem;
+      border-radius: 0.3125rem;
       background-color: #2f8cff;
       cursor: pointer;
 
@@ -415,10 +460,10 @@ export default {
       flex-direction: row;
       justify-content: center;
       align-items: center;
-      gap: 7px;
+      gap: 0.4375rem;
 
       span{
-        font-size: 14px;
+        font-size: 0.875rem;
         width: fit-content;
         font-weight: normal;
         font-stretch: normal;
@@ -429,13 +474,19 @@ export default {
       }
 
       img{
-        width: 11px;
-        height: 11px;
-        margin: 2px 7px 2px 0;
-        border-radius: 100px;
+        width: 0.6875rem;
+        height: 0.6875rem;
+        margin: 0.125rem 0.4375rem 0.125rem 0;
+        border-radius: 6.25rem;
       }
     }
   }
+}
+
+.indexation{
+  display: flex;
+  flex-direction: row;
+  gap: 0.625rem;
 }
 
 .modal-window{
@@ -444,21 +495,21 @@ export default {
     position: absolute;
     right: 0;
     z-index: 1000;
-    top: 30px;
-    width: 179px;
+    top: 4.75rem;
+    width: 11.1875rem;
     height: fit-content;
-    margin: 5px 15px 62px 822px;
-    padding: 7px;
-    border-radius: 5px;
-    box-shadow: 0 0 3px 0 #000, inset 0 1px 2px 0 rgba(255, 255, 255, 0.5);
+    margin: 0.3125rem 0.9375rem 3.875rem 51.375rem;
+    padding: 0.4375rem;
+    border-radius: 0.3125rem;
+    box-shadow: 0 0 0.1875rem 0 #000, inset 0 0.0625rem 0.125rem 0 rgba(255, 255, 255, 0.5);
     background-color: #fff;
-    gap:10px;
+    gap:0.625rem;
 
     .settings{
       display: flex;
       flex-direction: row;
       justify-content: center;
-      gap: 10px;
+      gap: 0.625rem;
     }
 }
 
@@ -468,21 +519,21 @@ export default {
   position: absolute;
   right: 0;
   z-index: 999;
-  top: 30px;
-  width: 179px;
+  top: 4.75rem;
+  width: 11.1875rem;
   height: fit-content;
-  margin: 5px 15px 62px 822px;
-  padding: 7px;
-  border-radius: 5px;
-  box-shadow: 0 0 3px 0 #000, inset 0 1px 2px 0 rgba(255, 255, 255, 0.5);
+  margin: 0.3125rem 0.9375rem 3.875rem 51.375rem;
+  padding: 0.4375rem;
+  border-radius: 0.3125rem;
+  box-shadow: 0 0 0.1875rem #000, inset 0 0.0625rem 0.125rem 0 rgba(255, 255, 255, 0.5);
   background-color: #fff;
-  gap:10px;
+  gap:0.625rem;
 
   .settings{
     display: flex;
     flex-direction: row;
     justify-content: center;
-    gap: 10px;
+    gap: 0.625rem;
 
     img{
       transform: rotate(180deg);
@@ -506,5 +557,153 @@ export default {
   width: 100%;
   height: 100%;
   z-index: 998;
+}
+
+.mobile-row{
+  display: none;
+}
+
+.delete-menu{
+  display: none;
+}
+
+.table-cell-mobile{
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .table{
+    width: 100%;
+    padding: 0.9375rem 0.9375rem 1.5625rem;
+  }
+  button.button-style{
+    width: 100%;
+    height: 3.4375rem;
+  }
+  .table-header{
+    display: none;
+  }
+  .table-cell-desktop{
+    display: none;
+  }
+  .table-cell-mobile{
+    display: block;
+
+    .row-input{
+      height: 2.1815rem;
+    }
+  }
+  .delete-modal-overlay{
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 5;
+  }
+  .tabel-panel{
+    border-radius: 0.625rem;
+    width: 100%;
+  }
+  .table-row{
+    display: block;
+    margin-bottom: 1.5625rem;
+    padding: 0.625rem;
+    background: white;
+    border-radius: 0.625rem;
+  }
+  .row-checkbox{
+    display: none;
+  }
+  .delete-menu{
+    display: block;
+    width: 11.1875rem;
+    height: 1.8125rem;
+    z-index: 6;
+    position: absolute;
+    border: 1px solid black;
+    padding: 0.4375rem 1.2125rem 0.4375rem 0.4375rem;
+    top: 0.625rem;
+    left: 0;
+    background: white;
+    border-radius: 0.625rem;
+    .delete-button{
+      color: #ae0a0a;
+      font-weight: normal;
+      font-stretch: normal;
+      font-style: normal;
+      line-height: normal;
+      letter-spacing: normal;
+      font-size: 1.125rem;
+    }
+  }
+  .indexation{
+    margin-bottom: 1.5625rem;
+  }
+  .mobile-row{
+    display: block;
+    margin-block-start: 0;
+  }
+  .controls{
+     div.right-panel{
+        display: none;
+     }
+     div.left-panel{
+        width: 100%;
+        gap: 0.625rem;
+        justify-content: space-between;
+
+        input{
+          width: 7.1875rem;
+        }
+
+        .add-column{
+          width: 5rem;
+        }
+        .add-row{
+          width: 5.125rem;
+        }
+
+        .button-style{
+          display: none;
+        }
+        
+     }
+  }
+
+  .ellipsis-block{
+    width: 0.625rem;
+    height: 0.625rem;
+    margin-bottom: 3.225rem;
+  }
+
+  .ellipsis-container-desktop{
+    display: none;
+  }
+  .ellipsis-container-mobile{
+    display: block;
+
+    img{
+      width: 0.6875rem;
+      height: 0.6875rem;
+    }
+
+    p{
+      margin-block-start: 0;
+      margin-block-end: 0.225rem;
+    }
+  }
+
+  .table-cell{
+    margin-top: 1.625px;
+    width: 100%;
+  }
+
+
+  .table-row:hover .ellipsis-container-desktop{
+    display: none;
+  }
+  
+
 }
 </style>

@@ -8,16 +8,21 @@
          url('@/font-families/8159.otf') format('otf');
     /* Дополнительные свойства шрифта */
   }
+
+  html{
+    font-size: 16px;
+  }
   
   body {
     font-family: 'Custom';
     background: #fbfcfd;
     margin: 0;
+    overflow: auto;
   }
   
   .table {
     display: flex;
-    gap: 5px;
+    gap: 0.3125rem;
     flex-direction: column;
   }
   
@@ -26,13 +31,13 @@
   }
 
   .table-header .table-cell {
-    border: 1px solid #ccc;
-    padding: 5px;
+    border: 0.0625rem solid #ccc;
+    padding: 0.3125rem;
   }
   
   .table-header-item {
-    padding: 10px;
-    border: 1px solid #ccc;
+    padding: 0.625rem;
+    border: 0.0625rem solid #ccc;
   }
 
   .column-input, .row-input {
@@ -41,7 +46,7 @@
   }
 
   .row-input{
-    padding: 5px 10px;
+    padding: 0.3125rem 0.625rem;
   }
   
   .table-row {
@@ -55,7 +60,7 @@
   }
   
   .row-checkbox {
-    margin-right: 10px;
+    margin-right: 0.625rem;
   }
   
   .handle {
@@ -75,27 +80,31 @@
   }
   
   .droppable {
-    border: 2px dashed #000;
+    border: 0.125rem dashed #000;
   }
   
   .droppable-placeholder {
-    border: 2px dashed #000;
+    border: 0.125rem dashed #000;
     width: 100%;
   }
   
-  .table-row:hover .ellipsis-container {
+  .table-row:hover .ellipsis-container-desktop {
     display: block;
+  }
+
+  .ellipsis-container-mobile{
+    display: none;
   }
   
   .ellipsis-block{
     position: relative;
-    width: 20px;
-    height: 20px;
+    width: 1.25rem;
+    height: 1.25rem;
     display: block;
     align-items: center;
   }
   
-  .ellipsis-container {
+  .ellipsis-container-desktop {
     display: none;
     position: absolute;
     top: 0;
@@ -109,12 +118,12 @@
   }
   
   .button-style{
-    padding: 10px 15px 10px 15px;
-    border-radius: 5px;
+    padding: 0.625rem 0.9375rem;
+    border-radius: 0.3125rem;
     border: none;
     background-color: #2f8cff;
     cursor: pointer;
-    font-size: 14px;
+    font-size: 0.875rem;
 
     font-family: 'Custom';
     width: fit-content;
